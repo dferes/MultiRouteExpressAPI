@@ -2,7 +2,7 @@ const express = require('express');
 const ExpressError = require('../expressError');
 const router = express.Router();
 const db = require('../db');
-const { route } = require('../app');
+
 
 router.get('/', async (req, res, next) => {
     try {
@@ -32,7 +32,7 @@ router.post('/', async (req, res, next) => {
     try {
         const { code, name, description } = req.body;
         if (!code || ! name || !description) {
-            throw new ExpressError('Missing JSON data, must provide a company code, name, and description');
+            throw new ExpressError('Missing JSON data, must provide a company code, name, and description', 400);
         }
         const results = await db.query('INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description', [code, name, description]);
         return res.status(201).json({ company: results.rows[0] });
@@ -57,12 +57,12 @@ router.put('/:code', async (req, res, next) =>  {
 
 router.delete('/:code', async (req, res, next) => {
     try {
-        const { code } = req.params;
-        const results = await db.query('DELETE FROM companies WHERE code=$1', [code]);
-        const foundRow = await db.query('SELECT * FROM companies WHERE code=$1', [code]);
-        if (foundRow.rows.length !== 0) {
-            throw new ExpressError(`Cannot find a company with a code of ${code}`, 404);
+        const foundRow = await db.query('SELECT * FROM companies WHERE code=$1', [req.params.code]);
+
+        if (foundRow.rows.length === 0) {
+            throw new ExpressError(`Cannot find a company with a code of ${req.params.code}`, 404);
         }
+        await db.query('DELETE FROM companies WHERE code=$1', [req.params.code]);
         return res.json({ message: 'DELETED' });
     } catch(e) {
         return next(e);
