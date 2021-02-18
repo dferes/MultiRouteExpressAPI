@@ -51,28 +51,49 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
     try {
-
+        const {comp_code, amt} = req.body;
+        if (!comp_code || !amt) {
+            throw new ExpressError('Missing JSON data, must provide an invoice comp_code and amount', 400);
+        }
+        const results = await db.query('INSERT INTO invoices (comp_code, amt) VALUES ($1, $2) RETURNING id, comp_code, amt, paid, add_date, paid_date', [comp_code, amt]);
+        return res.status(201).json({ invoice: results.rows[0] });
     } catch(e) {
-       
+       return next(e)
     }
 })
 
 
-// router.put('/:id', async (req, res, next) => {
-//     try {
-
-//     } catch(e) {
+router.put('/:id', async (req, res, next) => {
+    try {
+        const {amt} = req.body;
+        if (!amt){ 
+            throw new ExpressError('Missing JSON data, must provide an invoice amount', 400);
+        }
         
-//     }
-// })
-
-
-// router.delete('/:id', async (req, res, next) => {
-//     try {
-
-//     } catch(e) {
+        const result = await db.query('UPDATE invoices SET amt=$2 WHERE id=$1 RETURNING id, comp_code, amt, paid, add_date, paid_date', [req.params.id, amt]);
         
-//     }
-// })
+        if(result.rows.length === 0) {
+            throw new ExpressError(`No invoice with an id ${req.params.id} exists`, 404);
+        }
+        return res.status(200).json({ invoice: result.rows[0] });
+    } catch(e) {
+        return next(e);
+    }
+})
+
+
+router.delete('/:id', async (req, res, next) => {
+    try {
+        const foundRow = await db.query('SELECT * FROM invoices WHERE id=$1', [req.params.id]);
+
+        if (foundRow.rows.length === 0) {
+            throw new ExpressError(`Cannot find an invoice with an id of ${req.params.id}`, 404);
+        }
+        await db.query('DELETE FROM invoices WHERE id=$1', [req.params.id]);
+        return res.json({ message: 'DELETED' });
+    } catch(e) {
+        return next(e);
+    }
+})
 
 module.exports = router;
