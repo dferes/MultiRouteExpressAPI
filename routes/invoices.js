@@ -20,6 +20,9 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
+        if (isNaN(id)) {
+            throw new ExpressError('id must be an integer value', 400);
+        }
         const results = await db.query(
               `SELECT inv.id, inv.amt, inv.paid, inv.add_date, inv.paid_date, inv.comp_code, com.name, com.description 
                FROM invoices AS inv
@@ -27,6 +30,7 @@ router.get('/:id', async (req, res, next) => {
                    ON (inv.comp_code = com.code)
                WHERE id = $1`, [id]
         );
+        
         if ( results.rows.length === 0) {
             throw new ExpressError(`Can't find invoice with id of ${id}`, 404);
         }
@@ -60,6 +64,7 @@ router.post('/', async (req, res, next) => {
              VALUES ($1, $2) 
              RETURNING id, comp_code, amt, paid, add_date, paid_date`, 
              [comp_code, amt]);
+        
         return res.status(201).json({ invoice: results.rows[0] });
     } catch(e) {
        return next(e)
@@ -73,6 +78,9 @@ router.put('/:id', async (req, res, next) => {
         if (!amt){ 
             throw new ExpressError('Missing JSON data, must provide an invoice amount', 400);
         }
+        if (isNaN(req.params.id)) {
+            throw new ExpressError('id must be an integer value', 400);
+        }
         
         const result = await db.query(
             `UPDATE invoices 
@@ -80,7 +88,7 @@ router.put('/:id', async (req, res, next) => {
              WHERE id=$1 
              RETURNING id, comp_code, amt, paid, add_date, paid_date`, 
              [req.params.id, amt]);
-        
+
         if(result.rows.length === 0) {
             throw new ExpressError(`No invoice with an id ${req.params.id} exists`, 404);
         }
@@ -93,6 +101,9 @@ router.put('/:id', async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
     try {
+        if (isNaN(req.params.id)) {
+            throw new ExpressError('id must be an integer value', 400);
+        }
         const foundRow = await db.query('SELECT * FROM invoices WHERE id=$1', [req.params.id]);
 
         if (foundRow.rows.length === 0) {
