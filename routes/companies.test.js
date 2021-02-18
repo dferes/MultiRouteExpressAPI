@@ -7,13 +7,33 @@ const db = require('../db');
 let testCompany;
 
 beforeEach(async () => {
-  const result = await db.query(`INSERT INTO companies (code, name, description) VALUES ('google', 'Google', 'Overlords') RETURNING code, name, description`);
-  await db.query(`INSERT INTO companies (code, name, description) VALUES ('ikea', 'IKEA', 'We overcharge you to build your own stuff') RETURNING code, name, description`);
+  const result = await db.query(
+    `INSERT INTO companies (code, name, description) 
+    VALUES ('google', 'Google', 'Overlords') 
+    RETURNING code, name, description`);
+  
+  await db.query(
+    `INSERT INTO companies (code, name, description) 
+    VALUES ('ikea', 'IKEA', 'We overcharge you to build your own stuff') 
+    RETURNING code, name, description`);
+
+  await db.query(
+    `INSERT INTO invoices (comp_code, amt) 
+    VALUES ('google', 650) 
+    RETURNING id, comp_code, amt, paid, add_date, paid_date`
+  );
+
+  await db.query(
+    `INSERT INTO invoices (comp_code, amt) 
+    VALUES ('ikea', 1200) 
+    RETURNING id, comp_code, amt, paid, add_date, paid_date`
+  );
   testCompany = result.rows[0]
 })
 
 afterEach(async () => {
   await db.query(`DELETE FROM companies`)
+  await db.query(`DELETE FROM invoices`);
 })
 
 afterAll(async () => {
@@ -31,12 +51,14 @@ describe("GET /companies", () => {
 })
 
 describe("GET /companies/:code", () => {
-  test("Retrievs a single user when a valid company code parameter is passed in", async () => {
+  test("Retrieves a single user when a valid company code parameter is passed in", async () => {
     const res = await request(app).get(`/companies/${testCompany.code}`)
     expect(res.statusCode).toBe(200);
     expect(res.body.company.code).toEqual(testCompany.code);
     expect(res.body.company.name).toEqual(testCompany.name);
     expect(res.body.company.description).toEqual(testCompany.description)
+    expect(res.body.company.invoices.length).toEqual(1);
+
   })
   test("Responds with 404 when an invalid company code is passed in", async () => {
     const res = await request(app).get(`/companies/amazon`)
@@ -81,8 +103,7 @@ describe("PUT /companies/:id", () => {
     expect(res.statusCode).toBe(404);
   })
 })
-
-describe("DELETE /companies/:id", () => {
+ describe("DELETE /companies/:id", () => {
   test("Deletes a single user when a valid company code is passed as a parameter", async () => {
     const res = await request(app).delete(`/companies/${testCompany.code}`);
     expect(res.statusCode).toBe(200);
