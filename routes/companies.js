@@ -17,7 +17,12 @@ router.get('/', async (req, res, next) => {
 router.get('/:code', async (req, res, next) => {
     try {
         const { code } = req.params;
-        const results = await db.query('SELECT code, name, description FROM companies WHERE code = $1', [code]);
+        const results = await db.query(
+            `SELECT code, name, description 
+             FROM companies 
+             WHERE code = $1`, 
+             [code]
+        );
         if ( results.rows.length === 0) {
             throw new ExpressError(`Can't find company with code of ${code}`, 404);
         }
@@ -34,7 +39,12 @@ router.post('/', async (req, res, next) => {
         if (!code || ! name || !description) {
             throw new ExpressError('Missing JSON data, must provide a company code, name, and description', 400);
         }
-        const results = await db.query('INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description', [code, name, description]);
+        const results = await db.query(
+            `INSERT INTO companies (code, name, description) 
+             VALUES ($1, $2, $3) 
+             RETURNING code, name, description`, 
+             [code, name, description]
+        );
         return res.status(201).json({ company: results.rows[0] });
     } catch(e) {
         return next(e);
@@ -45,7 +55,13 @@ router.put('/:code', async (req, res, next) =>  {
     try {
         const { code } = req.params;
         const { name, description } = req.body;
-        const results = await db.query('UPDATE companies SET name=$2, description=$3 WHERE code=$1 RETURNING code, name, description', [code, name, description]);
+        const results = await db.query(
+            `UPDATE companies 
+             SET name=$2, description=$3 
+             WHERE code=$1 
+             RETURNING code, name, description`, 
+             [code, name, description]
+        );
         if(results.rows.length === 0) {
             throw new ExpressError(`Cannot find a company with a code of ${code}`, 404);
         }
