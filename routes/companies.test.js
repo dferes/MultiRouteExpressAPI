@@ -5,6 +5,7 @@ const app = require('../app');
 const db = require('../db');
 
 let testCompany;
+
 beforeEach(async () => {
   const result = await db.query(`INSERT INTO companies (code, name, description) VALUES ('google', 'Google', 'Overlords') RETURNING code, name, description`);
   await db.query(`INSERT INTO companies (code, name, description) VALUES ('ikea', 'IKEA', 'We overcharge you to build your own stuff') RETURNING code, name, description`);
@@ -69,8 +70,6 @@ describe("PUT /companies/:id", () => {
     const res = await request(app).put('/companies/ikea').send({ 
       name: 'SuperIKEA', description: 'Build it yourself!' });
     expect(res.statusCode).toBe(200);
-    console.log('----------------------------------');
-    console.log(res.body);
     expect(res.body).toEqual({
       company: { code: 'ikea', name: 'SuperIKEA', description: 'Build it yourself!' }
     })
