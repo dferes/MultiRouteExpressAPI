@@ -103,26 +103,58 @@ describe("GET /invoices", () => {
   
   describe("PUT /invoices/:id", () => {
     test("Updates all of the data of a single invoice when passed a valid id paramater and JSON data through the request body", async () => {
-      const res = await request(app).put(`/invoices/${testInvoice.id}`).send({ amt: '10000' });
+      const res = await request(app).put(`/invoices/${testInvoice.id}`).send({ 
+        amt: '10000',
+        paid: true
+      });
+    
       expect(res.statusCode).toBe(200);
       expect(res.body.invoice.id).toBeDefined();
       expect(res.body.invoice.comp_code).toEqual('apple');
       expect(res.body.invoice.amt).toEqual(10000);
-      expect(res.body.invoice.paid).toEqual(false);
+      expect(res.body.invoice.paid).toEqual(true);
       expect(res.body.invoice.add_date).toBeDefined();
-      expect(res.body.invoice.paid_date).toEqual(null);
+      expect(res.body.invoice.paid_date).not.toEqual(null);
 
+      const res2 = await request(app).put(`/invoices/${testInvoice.id}`).send({ 
+        amt: '10000',
+        paid: false
+      });
+    
+      expect(res2.statusCode).toBe(200);
+      expect(res2.body.invoice.id).toBeDefined();
+      expect(res2.body.invoice.comp_code).toEqual('apple');
+      expect(res2.body.invoice.amt).toEqual(10000);
+      expect(res2.body.invoice.paid).toEqual(false);
+      expect(res2.body.invoice.add_date).toBeDefined();
+      expect(res2.body.invoice.paid_date).toEqual(null);
+    })
+    test("Responds with 400 when JSON data includes a paid variable with an invalid value", async () => {
+      const res = await request(app).put(`/invoices/${testInvoice.id}`).send({ 
+        amt: '10000',
+        paid: 'blargh'
+      });
+      expect(res.statusCode).toBe(400);
     })
     test("Responds with 400 when JSON data is missing an amount variable", async () => {
-        const res = await request(app).put(`/invoices/${testInvoice.id}`).send({ amt: null });
+        const res = await request(app).put(`/invoices/${testInvoice.id}`).send({ 
+          amt: null,
+          paid: true
+        });
         expect(res.statusCode).toBe(400);
     })
     test("Responds with 404 when an invalid id parameter is passed", async () => {
-        const res = await request(app).put('/invoices/0').send({ amt: '99' });
+        const res = await request(app).put('/invoices/0').send({ 
+          amt: '99',
+          paid: true 
+        });
         expect(res.statusCode).toBe(404);
     })
     test("Responds with 400 when a non integer value is passed as id parameter", async () => {
-        const res = await request(app).put('/invoices/notNumber').send({ amt: '99' });
+        const res = await request(app).put('/invoices/notNumber').send({ 
+          amt: '99',
+          paid: true 
+        });
         expect(res.statusCode).toBe(400);
     })
   })
