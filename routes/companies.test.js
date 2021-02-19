@@ -28,12 +28,28 @@ beforeEach(async () => {
     VALUES ('ikea', 1200) 
     RETURNING id, comp_code, amt, paid, add_date, paid_date`
   );
+
+  await db.query(
+    `INSERT INTO industries (code, industry)
+    VALUES ('comp', 'Computers'),
+           ('man', 'Manufacturing')`
+  );
+  await db.query(
+    `INSERT INTO industries_companies (industry_code, company_code)
+    VALUES ('comp', 'google'),
+           ('comp', 'ikea'),
+           ('man', 'google'),
+           ('man', 'ikea')`
+  );
+
   testCompany = result.rows[0]
 })
 
 afterEach(async () => {
-  await db.query(`DELETE FROM companies`)
+  await db.query(`DELETE FROM companies`);
   await db.query(`DELETE FROM invoices`);
+  await db.query(`DELETE FROM industries`);
+  await db.query(`DELETE FROM industries_companies`);
 })
 
 afterAll(async () => {
@@ -58,7 +74,7 @@ describe("GET /companies/:code", () => {
     expect(res.body.company.name).toEqual(testCompany.name);
     expect(res.body.company.description).toEqual(testCompany.description)
     expect(res.body.company.invoices.length).toEqual(1);
-
+    expect(res.body.company.industries).toEqual(['Computers', 'Manufacturing']);
   })
   test("Responds with 404 when an invalid company code is passed in", async () => {
     const res = await request(app).get(`/companies/amazon`)
