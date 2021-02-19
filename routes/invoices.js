@@ -2,6 +2,7 @@ const express = require('express');
 const ExpressError = require('../expressError');
 const router = express.Router();
 const db = require('../db');
+const dateTime = require('node-datetime');
 
 
 router.get('/', async (req, res, next) => {
@@ -34,7 +35,7 @@ router.get('/:id', async (req, res, next) => {
         if ( results.rows.length === 0) {
             throw new ExpressError(`Can't find invoice with id of ${id}`, 404);
         }
-        console.log(results.rows[0]);
+
         const invoice = {
             id: results.rows[0].id,
             amt: results.rows[0].amt,
@@ -75,20 +76,21 @@ router.post('/', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
     try {
-        const {amt} = req.body;
-        if (!amt){ 
-            throw new ExpressError('Missing JSON data, must provide an invoice amount', 400);
+        const { amt, paid }  = req.body;
+        if (!amt || ![true, false].includes(paid)){ 
+            throw new ExpressError('Missing JSON data, must provide an invoice and paid parameter', 400);
         }
         if (isNaN(req.params.id)) {
             throw new ExpressError('id must be an integer value', 400);
         }
-        
+        const payDateValue = paid === true ? new dateTime.create().format('Y-m-d H:M '): null;
+
         const result = await db.query(
             `UPDATE invoices 
-            SET amt=$2 
+            SET amt=$2, paid=$3, paid_date=$4 
             WHERE id=$1 
             RETURNING id, comp_code, amt, paid, add_date, paid_date`, 
-            [req.params.id, amt]);
+            [req.params.id, amt, paid, payDateValue]);
 
         if(result.rows.length === 0) {
             throw new ExpressError(`No invoice with an id ${req.params.id} exists`, 404);
