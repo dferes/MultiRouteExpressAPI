@@ -29,6 +29,15 @@ router.get('/:code', async (req, res, next) => {
         if ( results.rows.length === 0) {
             throw new ExpressError(`Can't find company with code of ${code}`, 404);
         }
+        const companies = await db.query(
+            `Select i.industry
+            FROM industries AS i
+            LEFT JOIN industries_companies AS ic
+            ON i.code = ic.industry_code
+            LEFT JOIN companies AS c
+            ON c.code =  ic.company_code
+            WHERE c.code=$1`,
+            [code]);
 
         return res.json({ 
             company: { 
@@ -36,7 +45,9 @@ router.get('/:code', async (req, res, next) => {
                 name:   results.rows[0].name,
                 description: results.rows[0].description,
                 invoices: 
-                    results.rows.map(res => res.id)
+                    results.rows.map(res => res.id),
+                industries:
+                    companies.rows.map(ind => ind.industry)
             }
         });
     } catch(e) {
@@ -77,6 +88,7 @@ router.put('/:code', async (req, res, next) =>  {
         if(results.rows.length === 0) {
             throw new ExpressError(`Cannot find a company with a code of ${code}`, 404);
         }
+
         return res.status(200).json({ company: results.rows[0] });
     } catch(e) {
         return next(e);
