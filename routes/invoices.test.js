@@ -146,7 +146,7 @@ describe("GET /invoices", () => {
     test("Responds with 404 when an invalid id parameter is passed", async () => {
         const res = await request(app).put('/invoices/0').send({ 
           amt: '99',
-          paid: true 
+          paid: true
         });
         expect(res.statusCode).toBe(404);
     })
